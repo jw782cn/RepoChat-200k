@@ -235,7 +235,7 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
         if row['language'] == 'Jupyter Notebook':
             content = convert_ipynb_to_text(content)
 
-        if metadata_list is None:
+        if metadata_list:
             metadata = [str(row[col]) for col in metadata_list]
         else:
             metadata = ""
@@ -257,3 +257,11 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
             break
 
     return result.strip()
+
+
+def get_filtered_files(repo_path, file_paths, language=None, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
+    csv_path = os.path.join(repo_path, "repo_stats.csv")
+    filtered_files = filter_files(csv_path, file_paths, language=language)
+    output = preprocess_dataframe(filtered_files, limit=limit,  concat_method=concat_method,
+                                  include_directory=include_directory, metadata_list=metadata_list)
+    return output
