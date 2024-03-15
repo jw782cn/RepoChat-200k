@@ -25,16 +25,17 @@ def download_repo(repo_url, local_path):
             with open(zip_path, 'wb') as f:
                 f.write(response.content)
 
-            # 解压缩下载的ZIP文件
+            # unzip the file
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(local_repo_path)
 
-            # 删除下载的ZIP文件
+            # remove the zip file
             os.remove(zip_path)
 
             return local_repo_path
         else:
-            print(f"Failed to download the repository. Status code: {response.status_code}")
+            print(
+                f"Failed to download the repository. Status code: {response.status_code}")
             return None
     except Exception as e:
         print(f"An error occurred: {str(e)}")
@@ -71,7 +72,7 @@ def repo_stats(repo_path, csv_path=None):
     if csv_path is None:
         csv_path = os.path.join(repo_path, 'repo_stats.csv')
 
-    # 读取.gitignore文件
+    # read the .gitignore file
     gitignore_path = os.path.join(repo_path, '.gitignore')
     ignore_patterns = []
     if os.path.exists(gitignore_path):
@@ -94,7 +95,7 @@ def repo_stats(repo_path, csv_path=None):
                     notebook = nbformat.read(f, as_version=4)
                     content = nbformat.writes(notebook)
                 language = 'Jupyter Notebook'
-                
+
                 token_count_content = convert_ipynb_to_text(content)
                 token_count = num_tokens_from_string(token_count_content)
             else:
@@ -121,7 +122,7 @@ def repo_stats(repo_path, csv_path=None):
                 'file_name': file,
                 'file_path': rel_path,
                 'token_count': token_count,
-                'file_summary': None 
+                'file_summary': None
             })
 
     df = pd.DataFrame(data)
@@ -224,7 +225,8 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
             return flattened
 
         directory_lines = flatten_directory(directory_structure)
-        result += 'Directory Structure:\n' + '\n'.join(directory_lines) + '\n\n'
+        result += 'Directory Structure:\n' + \
+            '\n'.join(directory_lines) + '\n\n'
 
     for _, row in df.iterrows():
         r = result
@@ -232,12 +234,12 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
         content = row['file_content']
         if row['language'] == 'Jupyter Notebook':
             content = convert_ipynb_to_text(content)
-            
+
         if metadata_list is None:
             metadata = [str(row[col]) for col in metadata_list]
         else:
             metadata = ""
-            
+
         if concat_method == 'xml':
             result += f'<file name="{row["file_path"]}">\n'
             if metadata:
