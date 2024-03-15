@@ -1,14 +1,17 @@
 import os
 import requests
-import csv
 import pandas as pd
 import zipfile
 import fnmatch
 from pygments.lexers import guess_lexer_for_filename, TextLexer
 from pygments.util import ClassNotFound
 import nbformat
+import json
+from token_count import num_tokens_from_string
+
 
 def download_repo(repo_url, local_path):
+    '''Download a GitHub repository as a ZIP file and extract it to a local directory.'''
     try:
         repo_name = repo_url.split('/')[-1]
         local_repo_path = os.path.join(local_path, repo_name)
@@ -36,9 +39,35 @@ def download_repo(repo_url, local_path):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return None
-    
+
+
+def convert_ipynb_to_text(ipynb_content):
+    '''Convert a Jupyter Notebook to a text string.'''
+    notebook = json.loads(ipynb_content)
+    text = ""
+    for cell in notebook['cells']:
+        if cell['cell_type'] == 'markdown':
+            text += ''.join(cell['source']) + '\n\n'
+        elif cell['cell_type'] == 'code':
+            text += '```python\n'
+            text += ''.join(cell['source']) + '\n'
+            text += '```\n\n'
+            if len(cell['outputs']) > 0:
+                text += '<output>\n'
+                for output in cell['outputs']:
+                    if output['output_type'] == 'stream':
+                        text += ''.join(output['text']) + '\n'
+                    elif output['output_type'] == 'execute_result':
+                        text += ''.join(output['data'].get('text/plain', '')) + '\n'
+                    elif output['output_type'] == 'error':
+                        text += ''.join(output['traceback']) + '\n'
+                text += '</output>\n\n'
+
+    return text.strip()
+
 
 def repo_stats(repo_path, csv_path=None):
+    '''Generate statistics for a local GitHub repository.'''
     if csv_path is None:
         csv_path = os.path.join(repo_path, 'repo_stats.csv')
 
@@ -55,22 +84,25 @@ def repo_stats(repo_path, csv_path=None):
             file_path = os.path.join(root, file)
             rel_path = os.path.relpath(file_path, repo_path)
 
-            # 检查文件是否匹配.gitignore中的忽略规则
+            # check if the file is in the .gitignore
             if any(fnmatch.fnmatch(rel_path, pattern) for pattern in ignore_patterns):
                 continue
 
             if file.endswith('.ipynb'):
-                # 处理Jupyter Notebook文件
+                # Jupyter Notebook files
                 with open(file_path, 'r', encoding='utf-8') as f:
                     notebook = nbformat.read(f, as_version=4)
                     content = nbformat.writes(notebook)
                 language = 'Jupyter Notebook'
+                
+                token_count_content = convert_ipynb_to_text(content)
+                token_count = num_tokens_from_string(token_count_content)
             else:
-                # 处理其他文件
+                # other files
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
 
-                # 使用pygments识别文件的编程语言
+                # use Pygments to guess the language
                 try:
                     lexer = guess_lexer_for_filename(file_path, content)
                     language = lexer.name
@@ -79,6 +111,7 @@ def repo_stats(repo_path, csv_path=None):
 
                 if language is not None and isinstance(lexer, TextLexer):
                     language = None
+                token_count = num_tokens_from_string(content)
 
             data.append({
                 'file_content': content,
@@ -87,8 +120,8 @@ def repo_stats(repo_path, csv_path=None):
                 'file_size': os.path.getsize(file_path),
                 'file_name': file,
                 'file_path': rel_path,
-                'token_count': None,  # 留空,之后由其他函数填充
-                'file_hash': None  # 留空,之后由其他函数填充
+                'token_count': token_count,
+                'file_summary': None 
             })
 
     df = pd.DataFrame(data)
@@ -97,10 +130,39 @@ def repo_stats(repo_path, csv_path=None):
     return df, csv_path
 
 
+def filter_files(csv_path, file_paths, language=None):
+    '''Filter files in a CSV file based on file paths and language.'''
+    df = pd.read_csv(csv_path)
+    df['file_path'] = df['file_path'].str.replace(os.sep, '/')
+    file_paths = [path.lower() for path in file_paths]
+
+    conditions = []
+
+    # file path conditions
+    for path in file_paths:
+        if path.endswith('/'):
+            conditions.append(df['file_path'].str.lower().str.startswith(path))
+        else:
+            conditions.append(df['file_path'].str.lower() == path)
+
+    # language condition
+    if language is not None:
+        conditions.append(df['language'] == language)
+
+    # combine conditions
+    final_condition = conditions[0]
+    for condition in conditions[1:]:
+        final_condition &= condition
+
+    filtered_df = df[final_condition]
+    return filtered_df
+
+
 def language_percentage(csv_path):
+    '''Calculate the percentage of lines of code for each language in a CSV file.'''
     df = pd.read_csv(csv_path)
 
-    # 检查language列是否为空
+    # check if the 'language' column is empty
     if df['language'].isna().all():
         print("Warning: 'language' column is empty. Please make sure the 'language' column is populated.")
         return None
@@ -117,6 +179,7 @@ def language_percentage(csv_path):
 
 
 def print_directory_structure(repo_path):
+    '''Print the directory structure of a local GitHub repository.'''
     directory_structure = {}
 
     for root, dirs, files in os.walk(repo_path):
@@ -136,22 +199,59 @@ def print_directory_structure(repo_path):
             print_structure(value, level + 1)
 
     print_structure(directory_structure)
-    
 
-def filter_files(csv_path, file_paths):
-    df = pd.read_csv(csv_path)
-    df['file_path'] = df['file_path'].str.replace(os.sep, '/')
-    file_paths = [path.lower() for path in file_paths]
-    conditions = []
-    for path in file_paths:
-        if path.endswith('/'):
-            conditions.append(df['file_path'].str.lower().str.startswith(path))
+
+def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
+    '''Preprocess a DataFrame to generate a string representation of the data.'''
+    result = ''
+
+    if include_directory:
+        directory_structure = {}
+        for _, row in df.iterrows():
+            file_path = row['file_path']
+            parts = file_path.split('/')
+            current_level = directory_structure
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
+
+        def flatten_directory(structure, prefix=''):
+            flattened = []
+            for key, value in structure.items():
+                flattened.append(prefix + key)
+                flattened.extend(flatten_directory(value, prefix + '  '))
+            return flattened
+
+        directory_lines = flatten_directory(directory_structure)
+        result += 'Directory Structure:\n' + '\n'.join(directory_lines) + '\n\n'
+
+    for _, row in df.iterrows():
+        r = result
+        result += '\n\n' + '=' * 10 + '\n\n'
+        content = row['file_content']
+        if row['language'] == 'Jupyter Notebook':
+            content = convert_ipynb_to_text(content)
+            
+        if metadata_list is None:
+            metadata = [str(row[col]) for col in metadata_list]
         else:
-            conditions.append(df['file_path'].str.lower() == path)
-    final_condition = conditions[0]
-    for condition in conditions[1:]:
-        final_condition |= condition
-    filtered_df = df[final_condition]
-    return filtered_df
+            metadata = ""
+            
+        if concat_method == 'xml':
+            result += f'<file name="{row["file_path"]}">\n'
+            if metadata:
+                result += f'<metadata>{", ".join(metadata)}</metadata>\n'
+            result += f'<content>\n{content}\n</content>\n'
+            result += '</file>'
+        else:
+            result += f'File: {row["file_path"]}\n'
+            if metadata:
+                result += f'Metadata: {", ".join(metadata)}\n'
+            result += f'Content:\n{content}'
+        result += '\n\n' + '=' * 10 + '\n\n'
+        if limit and num_tokens_from_string(result) > limit:
+            result = r
+            break
 
-
+    return result.strip()
