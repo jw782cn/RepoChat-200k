@@ -131,31 +131,44 @@ def repo_stats(repo_path, csv_path=None):
     return df, csv_path
 
 
-def filter_files(csv_path, file_paths, language=None):
+def filter_files(csv_path, file_paths=None, language=None):
     '''Filter files in a CSV file based on file paths and language.'''
     df = pd.read_csv(csv_path)
+    if file_paths is None:
+        # no filter
+        return df
     df['file_path'] = df['file_path'].str.replace(os.sep, '/')
     file_paths = [path.lower() for path in file_paths]
 
     conditions = []
 
     # file path conditions
+    path_conditions = []
     for path in file_paths:
         if path.endswith('/'):
-            conditions.append(df['file_path'].str.lower().str.startswith(path))
+            path_conditions.append(df['file_path'].str.lower().str.startswith(path))
         else:
-            conditions.append(df['file_path'].str.lower() == path)
+            path_conditions.append(df['file_path'].str.lower() == path)
+
+    if path_conditions:
+        path_condition = path_conditions[0]
+        for condition in path_conditions[1:]:
+            path_condition |= condition
+        conditions.append(path_condition)
 
     # language condition
     if language is not None:
         conditions.append(df['language'] == language)
 
     # combine conditions
-    final_condition = conditions[0]
-    for condition in conditions[1:]:
-        final_condition &= condition
+    if conditions:
+        final_condition = conditions[0]
+        for condition in conditions[1:]:
+            final_condition &= condition
+        filtered_df = df[final_condition]
+    else:
+        filtered_df = df
 
-    filtered_df = df[final_condition]
     return filtered_df
 
 
@@ -259,7 +272,7 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
     return result.strip()
 
 
-def get_filtered_files(repo_path, file_paths, language=None, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
+def get_filtered_files(repo_path, file_paths=None, language=None, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
     csv_path = os.path.join(repo_path, "repo_stats.csv")
     filtered_files = filter_files(csv_path, file_paths, language=language)
     output = preprocess_dataframe(filtered_files, limit=limit,  concat_method=concat_method,

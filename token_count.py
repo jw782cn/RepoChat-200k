@@ -10,3 +10,10 @@ def num_tokens_from_string(string: str, model="gpt-3.5-turbo-0613") -> int:
 
     num_tokens = len(encoding.encode(string))  # Calculate number of tokens based on encoding
     return num_tokens
+
+def num_messages(messages: dict, model="gpt-3.5-turbo-0613") -> int:
+    """Returns the number of tokens in a chat message based on the specified model's encoding."""
+    num_tokens = 0
+    for msg in messages:
+        num_tokens += num_tokens_from_string(msg["content"], model=model)
+    return num_tokens
