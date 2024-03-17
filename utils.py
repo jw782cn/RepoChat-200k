@@ -122,7 +122,8 @@ def repo_stats(repo_path, csv_path=None):
                 'file_name': file,
                 'file_path': rel_path,
                 'token_count': token_count,
-                'file_summary': None
+                'description': None,
+                'graph': None
             })
 
     df = pd.DataFrame(data)
@@ -139,14 +140,14 @@ def filter_files(csv_path, file_paths=None, language=None):
         return df
     df['file_path'] = df['file_path'].str.replace(os.sep, '/')
     file_paths = [path.lower() for path in file_paths]
-
     conditions = []
 
     # file path conditions
     path_conditions = []
     for path in file_paths:
         if path.endswith('/'):
-            path_conditions.append(df['file_path'].str.lower().str.startswith(path))
+            path_conditions.append(
+                df['file_path'].str.lower().str.startswith(path))
         else:
             path_conditions.append(df['file_path'].str.lower() == path)
 
@@ -278,3 +279,14 @@ def get_filtered_files(repo_path, file_paths=None, language=None, limit=None, co
     output = preprocess_dataframe(filtered_files, limit=limit,  concat_method=concat_method,
                                   include_directory=include_directory, metadata_list=metadata_list)
     return output
+
+
+def get_content_from_file_name(repo_path, file_name):
+    csv_path = os.path.join(repo_path, "repo_stats.csv")
+    # filter to only the file we want
+    df = pd.read_csv(csv_path)
+    df = df[df["file_name"] == file_name]
+    # get the first row
+    row = df.iloc[0]
+    # get the file_content
+    return row["file_content"]
