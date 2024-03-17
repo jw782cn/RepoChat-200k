@@ -3,6 +3,7 @@ import requests
 import pandas as pd
 import zipfile
 import fnmatch
+import numpy as np
 from pygments.lexers import guess_lexer_for_filename, TextLexer
 from pygments.util import ClassNotFound
 import nbformat
@@ -132,45 +133,37 @@ def repo_stats(repo_path, csv_path=None):
     return df, csv_path
 
 
-def filter_files(csv_path, file_paths=None, language=None):
-    '''Filter files in a CSV file based on file paths and language.'''
+def filter_files(csv_path, selected_files=None, selected_folders=None, selected_languages=None):
+    '''Filter files in a CSV file based on selected paths, folders, and languages.'''
     df = pd.read_csv(csv_path)
-    if file_paths is None:
-        # no filter
-        return df
+
+    # normalize file paths
     df['file_path'] = df['file_path'].str.replace(os.sep, '/')
-    file_paths = [path.lower() for path in file_paths]
-    conditions = []
 
-    # file path conditions
+    # create conditions
     path_conditions = []
-    for path in file_paths:
-        if path.endswith('/'):
-            path_conditions.append(
-                df['file_path'].str.lower().str.startswith(path))
-        else:
-            path_conditions.append(df['file_path'].str.lower() == path)
 
+    # selected paths condition
+    if selected_files:
+        selected_files = [path.lower() for path in selected_files]
+        path_conditions.append(df['file_path'].str.lower().isin(selected_files))
+
+    # selected folders condition
+    if selected_folders:
+        selected_folders = [folder.lower() for folder in selected_folders]
+        folder_conditions = [df['file_path'].str.lower().str.startswith(folder) for folder in selected_folders]
+        path_conditions.extend(folder_conditions)
+
+    # combine path conditions
     if path_conditions:
-        path_condition = path_conditions[0]
-        for condition in path_conditions[1:]:
-            path_condition |= condition
-        conditions.append(path_condition)
+        combined_path_condition = pd.concat(path_conditions, axis=1).any(axis=1)
+        df = df[combined_path_condition]
 
-    # language condition
-    if language is not None:
-        conditions.append(df['language'] == language)
+    # languages condition
+    if selected_languages:
+        df = df[df['language'].isin(selected_languages)]
 
-    # combine conditions
-    if conditions:
-        final_condition = conditions[0]
-        for condition in conditions[1:]:
-            final_condition &= condition
-        filtered_df = df[final_condition]
-    else:
-        filtered_df = df
-
-    return filtered_df
+    return df
 
 
 def language_percentage(csv_path):
@@ -273,9 +266,9 @@ def preprocess_dataframe(df, limit=None, concat_method='xml', include_directory=
     return result.strip()
 
 
-def get_filtered_files(repo_path, file_paths=None, language=None, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
+def get_filtered_files(repo_path, selected_folders=None, selected_files=None, selected_languages=None, limit=None, concat_method='xml', include_directory=True, metadata_list=None):
     csv_path = os.path.join(repo_path, "repo_stats.csv")
-    filtered_files = filter_files(csv_path, file_paths, language=language)
+    filtered_files = filter_files(csv_path, selected_folders=selected_folders, selected_files=selected_files, selected_languages=selected_languages)
     output = preprocess_dataframe(filtered_files, limit=limit,  concat_method=concat_method,
                                   include_directory=include_directory, metadata_list=metadata_list)
     return output

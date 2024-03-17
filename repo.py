@@ -20,6 +20,8 @@ def main(repo_url):
     csv_path = os.path.join(repo_path, "repo_stats.csv")
     df, csv_path = repo_stats(extracted_repo_path, csv_path)
     logger.info(f"Repository stats saved to: {csv_path}")
+    
+    # if you want to extract some meta data, you can refer to `metadata_extract.py`
 
     language_percent = language_percentage(csv_path)
     if language_percent is not None:
