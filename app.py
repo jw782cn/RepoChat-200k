@@ -38,7 +38,7 @@ class StreamHandler:
         self.text += token
         self.container.markdown(self.text)
 
-st.set_page_config(page_title="GitHub Repo Chat with Claude", page_icon="🤖")
+st.set_page_config(page_title="RepoChat Claude", page_icon="🤖")
 
 with st.sidebar:
     # base_url = st.text_input("Base URL", value="https://openrouter.ai/api/v1")
@@ -61,6 +61,7 @@ with st.sidebar:
     if not os.path.exists(repo_path):
         if st.button("Download Repository"):
             os.system(f"python repo.py {repo_url}")
+            st.rerun() # rerun the script to get the updated repo_path
     else:
         st.write(f"Repository already downloaded to: {repo_path}")
 
@@ -92,9 +93,16 @@ with st.sidebar:
                 repo_path, selected_folders=selected_folder, selected_files=selected_files, selected_languages=selected_languages, limit=limit)
             st.write(
                 f"Total Tokens: {num_tokens_from_string(file_content_prefix)}")
-
+        
 
 st.title(f"{model}")
+st.info(f'''
+Using files : {selected_files}
+Folder: {selected_folder}
+Languages: {selected_languages}
+Limit: {limit}
+''')
+
 if not os.path.exists(repo_path):
     st.info("Copy the repository URL and click the download button.")
 
@@ -111,7 +119,6 @@ if prompt := st.chat_input():
         st.error("Please download the repository first.")
         st.stop()
     file_content_prefix = get_filtered_files(repo_path, selected_folders=selected_folder, selected_files=selected_files, selected_languages=selected_languages, limit=limit)
-    
 
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)

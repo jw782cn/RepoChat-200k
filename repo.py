@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 def main(repo_url):
     local_path = "./repos"
-    repo_path = download_repo(repo_url, local_path)
+    repo_path = clone_repo(repo_url, local_path)
     if repo_path:
         logger.info(f"Repository downloaded to: {repo_path}")
     else:

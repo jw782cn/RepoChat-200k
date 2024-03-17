@@ -1,7 +1,5 @@
 import os
-import requests
 import pandas as pd
-import zipfile
 import fnmatch
 import numpy as np
 from pygments.lexers import guess_lexer_for_filename, TextLexer
@@ -9,39 +7,30 @@ from pygments.util import ClassNotFound
 import nbformat
 import json
 from token_count import num_tokens_from_string
+import subprocess
+import shutil
 
-
-def download_repo(repo_url, local_path):
-    '''Download a GitHub repository as a ZIP file and extract it to a local directory.'''
+def clone_repo(repo_url, local_path):
+    '''Clone a GitHub repository to a local directory using git clone command.'''
     try:
         repo_name = repo_url.split('/')[-1]
         local_repo_path = os.path.join(local_path, repo_name)
-        os.makedirs(local_repo_path, exist_ok=True)
+        local_repo_download_path = os.path.join(local_repo_path, f"{repo_name}-main")
 
-        zip_url = f"{repo_url}/archive/master.zip"
-        response = requests.get(zip_url)
+        if not os.path.exists(local_repo_download_path):
+            os.makedirs(local_path, exist_ok=True)
 
-        if response.status_code == 200:
-            zip_path = os.path.join(local_path, f"{repo_name}.zip")
-            with open(zip_path, 'wb') as f:
-                f.write(response.content)
-
-            # unzip the file
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(local_repo_path)
-
-            # remove the zip file
-            os.remove(zip_path)
+            # Clone the repository using git clone command
+            subprocess.run(["git", "clone", repo_url, local_repo_download_path])
 
             return local_repo_path
         else:
-            print(
-                f"Failed to download the repository. Status code: {response.status_code}")
-            return None
+            print(f"The repository {repo_name} already exists at {local_repo_path}")
+            return local_repo_path
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return None
-
+    
 
 def convert_ipynb_to_text(ipynb_content):
     '''Convert a Jupyter Notebook to a text string.'''
