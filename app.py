@@ -47,7 +47,7 @@ with st.sidebar:
     st.title("Settings for LLM")
     st.write("Chat with LLM using the repository information and files. You can change model settings anytime during the chat.")
     model = st.selectbox(
-        "Model", options=["anthropic/claude-3-haiku", "anthropic/claude-3-opus"])
+        "Model", options=["anthropic/claude-3-haiku", "anthropic/claude-3-haiku:beta", "anthropic/claude-3-opus", "anthropic/claude-3-sonnet", "anthropic/claude-3-sonnet:beta", "anthropic/claude-3-opus:beta"])
     temperature = st.slider("Temperature", min_value=0.0,
                             max_value=1.0, value=0.7, step=0.1)
     system_prompt = st.text_area(

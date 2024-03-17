@@ -129,30 +129,28 @@ def repo_stats(repo_path, csv_path=None):
 def filter_files(csv_path, selected_files=None, selected_folders=None, selected_languages=None):
     '''Filter files in a CSV file based on selected paths, folders, and languages.'''
     df = pd.read_csv(csv_path)
+    
+    # Normalize file paths to a uniform format ("/" as separator)
+    df['file_path'] = df['file_path'].apply(lambda x: x.replace(os.sep, '/').replace('\\', '/').lower())
 
-    # normalize file paths
-    df['file_path'] = df['file_path'].str.replace(os.sep, '/')
+    # Initialize a condition that always evaluates to False; used to build our conditions
+    final_condition = pd.Series([False] * len(df))
 
-    # create conditions
-    path_conditions = []
-
-    # selected paths condition
+    # Selected files condition
     if selected_files:
-        selected_files = [path.lower() for path in selected_files]
-        path_conditions.append(df['file_path'].str.lower().isin(selected_files))
+        selected_files = [path.replace(os.sep, '/').replace('\\', '/').lower() for path in selected_files]
+        final_condition |= df['file_path'].isin(selected_files)
 
-    # selected folders condition
+    # Selected folders condition
     if selected_folders:
-        selected_folders = [folder.lower() for folder in selected_folders]
-        folder_conditions = [df['file_path'].str.lower().str.startswith(folder) for folder in selected_folders]
-        path_conditions.extend(folder_conditions)
+        selected_folders = [folder.replace(os.sep, '/').replace('\\', '/').lower() for folder in selected_folders]
+        folder_condition = pd.Series([any(df['file_path'].iloc[i].startswith(folder) for folder in selected_folders) for i in range(len(df))])
+        final_condition |= folder_condition
 
-    # combine path conditions
-    if path_conditions:
-        combined_path_condition = pd.concat(path_conditions, axis=1).any(axis=1)
-        df = df[combined_path_condition]
+    # Apply the combined path conditions to filter the dataframe
+    df = df[final_condition]
 
-    # languages condition
+    # Languages condition
     if selected_languages:
         df = df[df['language'].isin(selected_languages)]
 
