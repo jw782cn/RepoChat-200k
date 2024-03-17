@@ -6,7 +6,7 @@ import json
 import subprocess
 from pygments.util import ClassNotFound
 import pandas as pd
-from token_count import num_tokens_from_string
+from utils.token_count import num_tokens_from_string
 
 
 def clone_repo(repo_url, local_path):

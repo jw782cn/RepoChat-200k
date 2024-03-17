@@ -1,6 +1,6 @@
 import argparse
 import logging
-from utils import *
+from utils.utils import *
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

@@ -6,8 +6,8 @@ import pandas as pd
 import streamlit as st
 from openai import OpenAI
 
-from utils import get_filtered_files, find_repos
-from token_count import num_messages, num_tokens_from_string
+from utils.utils import get_filtered_files, find_repos
+from utils.token_count import num_messages, num_tokens_from_string
 
 
 logging.basicConfig(level=logging.INFO,
