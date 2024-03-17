@@ -89,10 +89,9 @@ def repo_stats(repo_path, csv_path=None):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     notebook = nbformat.read(f, as_version=4)
                     content = nbformat.writes(notebook)
-                language = 'Jupyter Notebook'
-
-                token_count_content = convert_ipynb_to_text(content)
-                token_count = num_tokens_from_string(token_count_content)
+                    language = 'Jupyter Notebook'
+                    token_count_content = convert_ipynb_to_text(content)
+                    token_count = num_tokens_from_string(token_count_content)
             else:
                 # other files
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:

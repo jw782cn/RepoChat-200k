@@ -8,7 +8,7 @@ def num_tokens_from_string(string: str, model="gpt-3.5-turbo-0613") -> int:
         print("Warning: model not found. Using cl100k_base encoding.")
         encoding = tiktoken.get_encoding("cl100k_base")  # Fallback encoding if model's encoding not found
 
-    num_tokens = len(encoding.encode(string))  # Calculate number of tokens based on encoding
+    num_tokens = len(encoding.encode(string, disallowed_special=()))  # Calculate number of tokens based on encoding
     return num_tokens
 
 def num_messages(messages: dict, model="gpt-3.5-turbo-0613") -> int:
