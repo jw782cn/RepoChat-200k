@@ -1,6 +1,6 @@
 # Chat-With-Repo
 
-Chat-With-Repo is a Streamlit-based application that allows users to interact with a large language model (LLM) to answer questions or generate code based on the contents of a GitHub repository.
+⚡Chat with GitHub Repo Using 200k Claude instead of RAG!⚡
 
 ## Features
 
