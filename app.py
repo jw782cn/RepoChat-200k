@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 from openai import OpenAI
 
-from utils import get_filtered_files
+from utils import get_filtered_files, find_repos
 from token_count import num_messages, num_tokens_from_string
 
 
@@ -38,12 +38,14 @@ class StreamHandler:
         self.text += token
         self.container.markdown(self.text)
 
-st.set_page_config(page_title="RepoChat Claude", page_icon="🤖")
+st.set_page_config(page_title="ChatWithRepo", page_icon="🤖")
+
 
 with st.sidebar:
     # base_url = st.text_input("Base URL", value="https://openrouter.ai/api/v1")
     # api_key = st.text_input("API Key", value=getenv("OPENROUTER_API_KEY"), type="password")
     st.title("Settings for LLM")
+    st.write("Chat with LLM using the repository information and files. You can change model settings anytime during the chat.")
     model = st.selectbox(
         "Model", options=["anthropic/claude-3-haiku", "anthropic/claude-3-opus"])
     temperature = st.slider("Temperature", min_value=0.0,
@@ -52,9 +54,18 @@ with st.sidebar:
         "System Prompt", value="You are a helpful assistant. You are provided with a repo information and files from the repo. Answer the user's questions based on the information and files provided.")
 
     st.title("Settings for Repo")
-    repo_url = st.text_input(
-        "Repository URL", value="https://github.com/langchain-ai/langgraph")
-    # check if the repo is already downloaded
+    repos = find_repos()
+    repo_options = [repo["repo_url"] for repo in repos]
+    
+    custom_repo_url = st.text_input("Custom Repository URL")
+    if st.button("Add Custom Repository"):
+        repo_options.append(custom_repo_url)
+        repo_url = custom_repo_url
+        os.system(f"python repo.py {repo_url}")
+        st.rerun()
+  
+    repo_url = st.selectbox(
+        "Repository URL", options=repo_options, index=0)
     repo_name = repo_url.split('/')[-1]
     local_path = "./repos"
     repo_path = os.path.join(local_path, repo_name)
@@ -95,16 +106,14 @@ with st.sidebar:
                 f"Total Tokens: {num_tokens_from_string(file_content_prefix)}")
         
 
-st.title(f"{model}")
-st.info(f'''
-Using files : {selected_files}
-Folder: {selected_folder}
-Languages: {selected_languages}
-Limit: {limit}
-''')
+if repo_name:
+    st.title(f"Repo: {repo_name}")
+else:
+    st.title(f"{model}")
 
 if not os.path.exists(repo_path):
     st.info("Copy the repository URL and click the download button.")
+    st.stop()
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
@@ -113,6 +122,13 @@ if "client" not in st.session_state:
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
+
+st.info(f'''
+Files : {selected_files}
+Folder: {selected_folder}
+Languages: {selected_languages}
+Limit: {limit}
+''')
 
 if prompt := st.chat_input():
     if not os.path.exists(repo_path):

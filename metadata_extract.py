@@ -1,6 +1,6 @@
 # from langchain_core.output_parsers import StrOutputParser, XMLOutputParser, JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from altair import Optional
+from typing import Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage
 import re

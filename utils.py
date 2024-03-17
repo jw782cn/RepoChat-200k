@@ -1,14 +1,13 @@
 import os
-import pandas as pd
 import fnmatch
-import numpy as np
 from pygments.lexers import guess_lexer_for_filename, TextLexer
-from pygments.util import ClassNotFound
 import nbformat
 import json
-from token_count import num_tokens_from_string
 import subprocess
-import shutil
+from pygments.util import ClassNotFound
+import pandas as pd
+from token_count import num_tokens_from_string
+
 
 def clone_repo(repo_url, local_path):
     '''Clone a GitHub repository to a local directory using git clone command.'''
@@ -18,7 +17,10 @@ def clone_repo(repo_url, local_path):
         local_repo_download_path = os.path.join(local_repo_path, f"{repo_name}-main")
 
         if not os.path.exists(local_repo_download_path):
-            os.makedirs(local_path, exist_ok=True)
+            os.makedirs(local_repo_download_path, exist_ok=True)
+            # store repo url in a file
+            with open(os.path.join(local_repo_path, "repo_url.txt"), "w") as f:
+                f.write(repo_url)
 
             # Clone the repository using git clone command
             subprocess.run(["git", "clone", repo_url, local_repo_download_path])
@@ -71,6 +73,9 @@ def repo_stats(repo_path, csv_path=None):
 
     data = []
     for root, dirs, files in os.walk(repo_path):
+        if '.git' in dirs:
+            dirs.remove('.git')  # don't visit .git directories
+            
         for file in files:
             file_path = os.path.join(root, file)
             rel_path = os.path.relpath(file_path, repo_path)
@@ -272,3 +277,19 @@ def get_content_from_file_name(repo_path, file_name):
     row = df.iloc[0]
     # get the file_content
     return row["file_content"]
+
+
+def find_repos():
+    '''Find all the repositories in the repos directory.'''
+    repos = []
+    # check 'repos' dirs and check if repo_stats.csv exists, get repo_url in repo_url.txt
+    for root, dirs, files in os.walk("./repos"):
+        if 'repo_stats.csv' in files:
+            repo_url = None
+            with open(os.path.join(root, "repo_url.txt"), "r") as f:
+                repo_url = f.read().strip()
+            repos.append({
+                "repo_path": root,
+                "repo_url": repo_url
+            })
+    return repos

@@ -1,0 +1,7 @@
+openai
+pandas
+pygments
+streamlit
+tiktoken
+nbformat
+langchain
