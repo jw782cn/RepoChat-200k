@@ -6,8 +6,8 @@ import pandas as pd
 import streamlit as st
 from openai import OpenAI
 
-from utils.utils import get_filtered_files, find_repos
-from utils.token_count import num_messages, num_tokens_from_string
+from utils import get_filtered_files, find_repos
+from token_count import num_messages, num_tokens_from_string
 
 
 logging.basicConfig(level=logging.INFO,
@@ -66,6 +66,7 @@ with st.sidebar:
   
     repo_url = st.selectbox(
         "Repository URL", options=repo_options, index=0)
+    repo_url = repo_url if repo_url else "/"
     repo_name = repo_url.split('/')[-1]
     local_path = "./repos"
     repo_path = os.path.join(local_path, repo_name)

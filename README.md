@@ -1,6 +1,6 @@
 # Chat-With-Repo
 
-⚡Chat with GitHub Repo Using 200k Claude instead of RAG!⚡
+⚡Chat with GitHub Repo Using 200k context window of Claude instead of RAG!⚡
 
 ## Features
 
