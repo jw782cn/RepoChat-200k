@@ -1,3 +1,8 @@
+"""
+Extract metadata from a file and summarize it into xml format.
+NOTE: This file is not used in the project. You can use this as a reference to create your own meta extraction.
+"""
+
 # from langchain_core.output_parsers import StrOutputParser, XMLOutputParser, JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Optional
