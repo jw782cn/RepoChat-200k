@@ -1,6 +1,68 @@
-# Chat-With-Repo
+# RepoChat in 200k - No RAG!
+
+<img src="examples/logo.png" height="40">
 
 ⚡Chat with GitHub Repo Using 200k context window of Claude instead of RAG!⚡
+
+<img src="examples/example.gif" height="400">
+
+
+## Why RepoChat - No RAG?
+
+Take the advantage of Claude 200k! Put all examples and codes to the contexts!
+
+**We need copilot rather than agent sometimes!**
+
+### 1. Not just Chat, But Write Codes with the Lastest Documents
+
+Have troubles memorizing all the apis in llama-index or langchain? 
+
+No worries, just include the components examples and the documents from the repo and let Claude Opus - the strongest model and long context window of 200k to write your agent for you!
+
+### 2. No copy paste, Just Select
+
+<img src="examples/repos.png" height="300">
+
+Download/Clone your Repo from Github then just select the files you'd like, I got you covered on constructing the prompt.
+
+### 3. No RAG, You decide
+
+I've seen many Chat with Repo projects, they all have the painpoints:
+
+`Which files do this query need?`
+
+They use **embedding search** in Code database but most of the time I already knew what documents I'm refering... So make your own choices each time when you are coding.
+
+- Coding Frontend? Just select components and examples.
+
+- Coding Agents? Just select Jupyter Notebook of langgraph.
+
+- Coding RAG? Just select Jupyter Notebook of llamaindex.
+
+<img src="examples/selection.png" height="400">
+
+
+### 4. More Use Cases!
+
+#### Use llamaindex doc
+
+select llamaindex example of pipeline to write RAG graph.
+
+<img src="examples/llamaindex.png" height="400">
+
+#### Use Shadcn doc to write frontend
+
+select examples and components definition.
+
+<img src="examples/shadcn.png" height="400">
+
+
+## Suggestions!
+
+1. You can use Haiku for most of the case.
+2. Change models based on tasks.
+3. Change files based on tasks.
+4. Clone Repos You like! 
 
 ## Features
 

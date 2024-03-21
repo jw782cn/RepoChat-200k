@@ -4,4 +4,5 @@ pygments
 streamlit
 tiktoken
 nbformat
-langchain
+pyyaml
+GitPython
