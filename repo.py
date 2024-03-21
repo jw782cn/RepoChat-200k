@@ -1,9 +1,10 @@
 import argparse
-import logging
-from utils import *
+import os
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+from utils import clone_repo, repo_stats, language_percentage, print_directory_structure
+
 
 def main(repo_url):
     local_path = "./repos"
@@ -14,13 +15,13 @@ def main(repo_url):
         logger.error("Failed to download the repository.")
         return
 
-    repo_name = repo_url.split('/')[-1]
+    repo_name = repo_url.split("/")[-1]
     extracted_repo_path = os.path.join(repo_path, f"{repo_name}-main")
 
     csv_path = os.path.join(repo_path, "repo_stats.csv")
     df, csv_path = repo_stats(extracted_repo_path, csv_path)
     logger.info(f"Repository stats saved to: {csv_path}")
-    
+
     # if you want to extract some meta data, you can refer to `metadata_extract.py`
 
     language_percent = language_percentage(csv_path)
@@ -34,9 +35,12 @@ def main(repo_url):
     logger.info("Repository directory structure:")
     print_directory_structure(extracted_repo_path)
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Download and analyze a GitHub repository.')
-    parser.add_argument('repo_url', type=str, help='GitHub repository URL')
+    parser = argparse.ArgumentParser(
+        description="Download and analyze a GitHub repository."
+    )
+    parser.add_argument("repo_url", type=str, help="GitHub repository URL")
     args = parser.parse_args()
 
     main(args.repo_url)
