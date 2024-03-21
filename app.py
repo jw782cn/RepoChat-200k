@@ -55,7 +55,7 @@ def get_base_url(selected_model: str) -> str:
         raise ValueError(f"Model {selected_model} not found.")
 
 
-def get_api_key(selected_model: str) -> str | None:
+def get_api_key(selected_model: str) -> str:
     """Get the api key for the selected model.
     Args:
         selected_model(str): selected model
