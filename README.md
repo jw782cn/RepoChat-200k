@@ -1,7 +1,5 @@
 # RepoChat in 200k - No RAG!
 
-<img src="examples/logo.png" height="40">
-
 ⚡Chat with GitHub Repo Using 200k context window of Claude instead of RAG!⚡
 
 <img src="examples/example.gif" height="400">
