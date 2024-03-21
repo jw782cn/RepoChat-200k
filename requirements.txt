@@ -6,3 +6,4 @@ tiktoken
 nbformat
 pyyaml
 GitPython
+python-dotenv

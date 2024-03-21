@@ -66,6 +66,8 @@ select examples and components definition.
 
 <img src="examples/count.png" height="200">
 
+Currently I only supported Openrouter.
+
 ## Features
 
 1. **Repository Download**: Users can provide a GitHub repository URL, and the application will automatically download and analyze the repository.
