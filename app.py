@@ -36,7 +36,7 @@ MODEL_MAP = {
         "anthropic/claude-3-opus:beta",
     ],
 }
-MODELS = [*MODEL_MAP[ProviderType.OPENAI], *MODEL_MAP[ProviderType.OPENROUTER]]
+MODELS = [*MODEL_MAP[ProviderType.OPENROUTER], *MODEL_MAP[ProviderType.OPENAI]]
 
 
 def get_base_url(selected_model: str) -> str:
