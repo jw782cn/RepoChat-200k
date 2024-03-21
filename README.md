@@ -85,6 +85,8 @@ Currently I only supported Openrouter. Planing to add more and refactor someday.
 ```bash
 OPENROUTER_API_KEY=your_openai_api_key_here
 ```
+I recommend [OpenRouter](https://openrouter.ai/) because it has all models!
+
 3. **Run the application**: Run the `app.py` script using Streamlit:
 ```bash
 streamlit run app.py
