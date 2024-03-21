@@ -81,11 +81,17 @@ Currently I only supported Openrouter. Planing to add more and refactor someday.
 
 1. **Environment Settings**: Run `pip install -r requirements.txt` to set up environment.
 
-2. **Create a .env file**: Create a `.env` file in the root directory of the project and add your OpenAI API key:
+2. **Create a .env file**: Create a `.env` file in the root directory of the project and add your OpenRouter API key (Recommended):
 ```bash
-OPENROUTER_API_KEY=your_openai_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 I recommend [OpenRouter](https://openrouter.ai/) because it has all models!
+
+If you want to use OpenAI GPT models, add your `openai api key` as well.
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
 3. **Run the application**: Run the `app.py` script using Streamlit:
 ```bash
