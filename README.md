@@ -61,6 +61,10 @@ select examples and components definition.
 2. Change models based on tasks.
 3. Change files based on tasks.
 4. Clone Repos You like! 
+5. Usually I will include README of repo to help Claude Understand better
+6. USE `COUNT TOKENS` on the sidebar to see how many tokens you will send!!!
+
+<img src="examples/count.png" height="200">
 
 ## Features
 

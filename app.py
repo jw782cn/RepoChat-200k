@@ -8,12 +8,13 @@ from openai import OpenAI
 
 from utils import get_filtered_files, find_repos
 from token_count import num_messages, num_tokens_from_string
+from dotenv import load_dotenv
+load_dotenv()
 
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
 
 class ChatClient:
     def __init__(self, base_url="https://openrouter.ai/api/v1", api_key=os.getenv("OPENROUTER_API_KEY")):
