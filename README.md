@@ -66,8 +66,6 @@ select examples and components definition.
 
 <img src="examples/count.png" height="200">
 
-Currently I only supported Openrouter.
-
 ## Features
 
 1. **Repository Download**: Users can provide a GitHub repository URL, and the application will automatically download and analyze the repository.
@@ -76,6 +74,8 @@ Currently I only supported Openrouter.
 4. **Token Limit**: Users can set a token limit to control the amount of information sent to the LLM, which can be useful for performance or cost considerations.
 5. **Chat Interface**: Users can interact with the LLM through a chat-style interface, allowing them to ask questions or request code generation based on the repository contents.
 6. **Streaming Output**: The LLM's responses are displayed in a streaming fashion, providing a more engaging and real-time user experience.
+
+Currently I only supported Openrouter. Planing to add more and refactor someday.
 
 ## Get Started
 
@@ -103,7 +103,7 @@ These settings can be adjusted in the sidebar of the Streamlit application.
 
 ## Contributing
 
-If you'd like to contribute to the Chat-With-Repo project, please feel free to submit issues or pull requests on the [GitHub repository](https://github.com/jw782cn/Chat-With-Repo).
+If you'd like to contribute to the RepoChat-200k project, please feel free to submit issues or pull requests on the [GitHub repository](https://github.com/jw782cn/RepoChat-200k).
 
 ## License
 
