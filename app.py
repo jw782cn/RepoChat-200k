@@ -18,6 +18,7 @@ class StreamHandler:
         self.container.markdown(self.text)
 
 def refresh_repos():
+    logger.info("Refreshing repositories")
     if 'repoManager' not in st.session_state:
         st.session_state['repoManager'] = RepoManager()
     st.session_state['repoManager'].load_repos()
