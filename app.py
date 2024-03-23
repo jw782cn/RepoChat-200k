@@ -1,106 +1,11 @@
 import os
-from enum import Enum
-
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
 from loguru import logger
 from openai import OpenAI
-
 from token_count import num_messages, num_tokens_from_string
-from utils import get_filtered_files, find_repos
-
-load_dotenv()
-
-
-class ProviderType(str, Enum):
-    OPENAI = "OPENAI"
-    OPENROUTER = "OPENROUTER"
-
-
-BASE_URL_MAP = {
-    ProviderType.OPENAI: "https://api.openai.com/v1",
-    ProviderType.OPENROUTER: "https://openrouter.ai/api/v1",
-}
-MODEL_MAP = {
-    ProviderType.OPENAI: [
-        "gpt-4-1106-preview",
-        "gpt-3.5-turbo-16k",
-    ],
-    ProviderType.OPENROUTER: [
-        "anthropic/claude-3-haiku",
-        "anthropic/claude-3-haiku:beta",
-        "anthropic/claude-3-opus",
-        "anthropic/claude-3-sonnet",
-        "anthropic/claude-3-sonnet:beta",
-        "anthropic/claude-3-opus:beta",
-    ],
-}
-MODELS = [*MODEL_MAP[ProviderType.OPENROUTER], *MODEL_MAP[ProviderType.OPENAI]]
-
-
-def get_base_url(selected_model: str) -> str:
-    """Get the base url for the selected model.
-    Args:
-        selected_model(str): selected model
-
-    Returns:
-        str: base url for the selected model
-    """
-    if selected_model in MODEL_MAP[ProviderType.OPENAI]:
-        return BASE_URL_MAP[ProviderType.OPENAI]
-    elif selected_model in MODEL_MAP[ProviderType.OPENROUTER]:
-        return BASE_URL_MAP[ProviderType.OPENROUTER]
-    else:
-        raise ValueError(f"Model {selected_model} not found.")
-
-
-def get_api_key(selected_model: str) -> str:
-    """Get the api key for the selected model.
-    Args:
-        selected_model(str): selected model
-
-    Returns:
-        str: api key for the selected model
-    """
-    if selected_model in MODEL_MAP[ProviderType.OPENAI]:
-        return os.getenv("OPENAI_API_KEY")
-    elif selected_model in MODEL_MAP[ProviderType.OPENROUTER]:
-        return os.getenv("OPENROUTER_API_KEY")
-    else:
-        raise ValueError(f"Model {selected_model} not found.")
-
-
-class ChatClient:
-    def __init__(self, base_url: str, api_key: str):
-        logger.info(
-            f"Initializing ChatClient, base_url: {base_url} and api_key: {api_key[:5]}..."
-        )
-        self.client = OpenAI(base_url=base_url, api_key=api_key)
-
-    def chat(
-        self, messages, model="anthropic/claude-3-opus", temperature=0.7, stream=True
-    ):
-        return self.client.chat.completions.create(
-            model=model, messages=messages, stream=stream, temperature=temperature
-        )
-
-
-def create_client_for_model(selected_model: str):
-    """Create a client for the selected model.
-    Args:
-        selected_model(str): selected model
-
-    Returns:
-        ChatClient: ChatClient for the selected model
-    """
-    base_url = get_base_url(selected_model)
-    api_key = get_api_key(selected_model)
-
-    if api_key is None:
-        raise ValueError(f"API Key not found for model: {selected_model}")
-
-    return ChatClient(base_url, api_key)
+from llm_service import MODELS, create_client_for_model
+from repo_service import RepoManager
 
 
 class StreamHandler:
@@ -112,15 +17,76 @@ class StreamHandler:
         self.text += token
         self.container.markdown(self.text)
 
+def refresh_repos():
+    logger.info("Refreshing repositories")
+    if 'repoManager' not in st.session_state:
+        st.session_state['repoManager'] = RepoManager()
+    st.session_state['repoManager'].load_repos()
+    st.success("Refreshed repositories")
 
 def create_app():
     st.set_page_config(page_title="ChatWithRepo", page_icon="🤖")
 
+    if 'repoManager' not in st.session_state:
+        st.session_state['repoManager'] = RepoManager()
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
+
+    repoManager: RepoManager = st.session_state['repoManager']
     with st.sidebar:
+        st.title("Settings for Repo")
+        custom_repo_url = st.text_input("Custom Repository URL")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Add Custom Repository"):
+                if repoManager.add_repo(custom_repo_url):
+                    st.success(f"Added custom repository: {custom_repo_url}")
+                else:
+                    st.error(f"Repository add failed: {custom_repo_url}")
+                repo_url = custom_repo_url
+        with col2:
+            if st.button("Refresh Repositories"):
+                refresh_repos()
+            
+        repo_url = st.selectbox(
+            "Repository URL", options=repoManager.get_repo_urls())
+        if repoManager.check_if_repo_exists(repo_url):
+            repo = repoManager.get_repo_service(repo_url)
+            selected_folder = st.multiselect(
+                "Select Folder", options=repo.get_folders_options())
+            selected_files = st.multiselect(
+                "Select Files", options=repo.get_files_options(), default="README.md")
+            selected_languages = st.multiselect(
+                "Filtered by Language", options=repo.get_languages_options())
+            limit = st.number_input("Limit", value=100000, step=10000)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("Count Tokens"):
+                    file_string = repo.get_filtered_files(
+                        selected_folders=selected_folder,
+                        selected_files=selected_files,
+                        selected_languages=selected_languages,
+                        limit=limit,
+                    )
+                    st.write(
+                        f"Total Tokens: {num_tokens_from_string(file_string)}")
+            with col2:
+                if st.button("Update Repo"):
+                    if repo.update_repo():
+                        st.success(f"Updated repository: {repo_url}")
+                    else:
+                        st.error(f"Repository update failed: {repo_url}")
+                    st.rerun()
+            with col3:
+                if st.button("Delete Repo"):
+                    if repo.delete_repo():
+                        st.success(f"Deleted repository: {repo_url}")
+                    else:
+                        st.error(f"Repository delete failed: {repo_url}")
+                    refresh_repos()
+                    st.rerun()
+
         st.title("Settings for LLM")
-        st.write(
-            "Chat with LLM using the repository information and files. You can change model settings anytime during the chat."
-        )
 
         selected_model = st.selectbox("Model", options=MODELS)
         temperature = st.slider(
@@ -131,83 +97,25 @@ def create_app():
             value="You are a helpful assistant. You are provided with a repo information and files from the repo. Answer the user's questions based on the information and files provided.",
         )
 
-        st.title("Settings for Repo")
-        repos = find_repos()
-        repo_options = [repo["repo_url"] for repo in repos]
+        if st.button("Clear Chat"):
+            st.session_state["messages"] = []
 
-        custom_repo_url = st.text_input("Custom Repository URL")
-        if st.button("Add Custom Repository"):
-            repo_options.append(custom_repo_url)
-            repo_url = custom_repo_url
-            os.system(f"python repo.py {repo_url}")
-            st.rerun()
-
-        repo_url = st.selectbox("Repository URL", options=repo_options, index=0)
-        repo_url = repo_url if repo_url else "/"
-        repo_name = repo_url.split("/")[-1]
-        local_path = "./repos"
-        repo_path = os.path.join(local_path, repo_name)
-        if not os.path.exists(repo_path):
-            if st.button("Download Repository"):
-                os.system(f"python repo.py {repo_url}")
-                st.rerun()  # rerun the script to get the updated repo_path
-        else:
-            st.write(f"Repository already downloaded to: {repo_path}")
-
-            csv_path = os.path.join(repo_path, "repo_stats.csv")
-            try:
-                df = pd.read_csv(csv_path)
-                file_options = df["file_path"].tolist()
-                # get folder from file_path
-                folder_options = list(
-                    set([os.path.dirname(file_path) for file_path in file_options])
-                )
-                language_options = df["language"].unique().tolist()
-                selected_folder = st.multiselect(
-                    "Select Folder", options=folder_options
-                )
-                selected_files = st.multiselect(
-                    "Select Files", options=file_options, default="README.md"
-                )
-                selected_languages = st.multiselect(
-                    "Language", options=language_options
-                )
-            except FileNotFoundError:
-                st.error(f"File not found: {csv_path}")
-                selected_files = []
-                selected_folder = []
-                selected_languages = []
-            limit = st.number_input("Limit", value=200000, step=10000)
-
-            if st.button("Clear Chat"):
-                st.session_state["messages"] = []
-            if st.button("Count Tokens"):
-                file_content_prefix = get_filtered_files(
-                    repo_path,
-                    selected_folders=selected_folder,
-                    selected_files=selected_files,
-                    selected_languages=selected_languages,
-                    limit=limit,
-                )
-                st.write(f"Total Tokens: {num_tokens_from_string(file_content_prefix)}")
-
-    if repo_name:
-        st.title(f"Repo: {repo_name}")
-    else:
-        st.title(f"{selected_model}")
-
-    if not os.path.exists(repo_path):
-        st.info("Copy the repository URL and click the download button.")
-        st.stop()
-
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = []
     if "client" not in st.session_state:
         st.session_state["client"] = create_client_for_model(selected_model)
 
-    for msg in st.session_state.messages:
-        st.chat_message(msg["role"]).write(msg["content"])
+    if repoManager.isEmpty():
+        st.info("Copy the repository URL and click the download button.")
+        st.stop()
 
+    if not repoManager.check_if_repo_exists(repo_url):
+        st.info(f"{repo_url} does not exist. Please add the repository first.")
+        st.stop()
+
+    repo = repoManager.get_repo_service(repo_url)
+    st.title(f"Repo: {repo.repo_name}")
+    st.write(
+            "Chat with LLM using the repository information and files. You can change model settings anytime during the chat."
+        )
     st.info(
         f"""
     Files : {selected_files}
@@ -216,8 +124,15 @@ def create_app():
     Limit: {limit}
     """
     )
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
 
     if prompt := st.chat_input():
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.chat_message("user").write(prompt)
+        logger.info(f"User: {prompt}, received at {pd.Timestamp.now()}")
+
+        start_time = pd.Timestamp.now()
         # Check if the selected model has changed
         if "selected_model" not in st.session_state:
             st.session_state.selected_model = None
@@ -226,44 +141,36 @@ def create_app():
             st.session_state.client = create_client_for_model(selected_model)
             st.session_state.selected_model = selected_model
 
-        if not os.path.exists(repo_path):
-            st.error("Please download the repository first.")
-            st.stop()
-        file_content_prefix = get_filtered_files(
-            repo_path,
+        file_string = repo.get_filtered_files(
             selected_folders=selected_folder,
             selected_files=selected_files,
             selected_languages=selected_languages,
             limit=limit,
         )
-
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
+        end_time = pd.Timestamp.now()
+        logger.info(
+            f"Time taken to get filtered files: {end_time - start_time}")
 
         with st.chat_message("assistant"):
             stream_handler = StreamHandler(st.empty())
             # only add file content to the system prompt
             messages = (
                 [{"role": "system", "content": system_prompt}]
-                + [{"role": "user", "content": file_content_prefix}]
+                + [{"role": "user", "content": file_string}]
                 + st.session_state.messages
             )
             client = st.session_state["client"]
 
             # log the information
+            total_tokens = num_messages(messages)
             logger.info(
-                f"Information: {repo_path}, {selected_files}, {selected_folder}, {selected_languages}, {limit}"
-            )
-            st.sidebar.write(
-                f"Sending file content: {selected_files} and filter folder: {selected_folder} to the assistant."
-            )
-            st.sidebar.write(f"total messages token: {num_messages(messages)}")
+                f"Information: {selected_files}, {selected_folder}, {selected_languages}")
             logger.info(f"Using settings: {selected_model}, {temperature}")
-            logger.info(
-                f"Sending selected files {selected_files} and filter folder: {selected_folder} to the assistant."
-            )
-            logger.info(f"File token: {num_tokens_from_string(file_content_prefix)}")
-            logger.info(f"Total Messages Token: {num_messages(messages)}")
+            logger.info(f"File token: {num_tokens_from_string(file_string)}")
+            logger.info(f"Total Messages Token: {total_tokens}")
+            st.sidebar.write(
+                f"Sending file content: {selected_files} and filter folder: {selected_folder} to the assistant.")
+            st.sidebar.write(f"total messages token: {total_tokens}")
 
             # send to llm
             completion = client.chat(
