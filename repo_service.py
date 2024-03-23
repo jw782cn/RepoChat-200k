@@ -44,24 +44,25 @@ def retry(max_retries=3, retry_delay=5):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            last_exception = None  # last exception that occurred
             retries = 0
             while retries < max_retries:
                 try:
                     return func(*args, **kwargs)
                 except (subprocess.CalledProcessError, requests.exceptions.RequestException, zipfile.BadZipFile) as e:
                     retries += 1
-                    logger.error(
-                        f"Error in {func.__name__}. Retrying ({retries}/{max_retries})...")
+                    last_exception = e  # update last exception
+                    logger.error(f"Error in {func.__name__}. Retrying ({retries}/{max_retries})...")
                     time.sleep(retry_delay)
-            logger.error(
-                f"Failed to execute {func.__name__} after {max_retries} retries.")
-            if e:
-                raise e
+            logger.error(f"Failed to execute {func.__name__} after {max_retries} retries.")
+            if last_exception:
+                raise last_exception  # if an exception occurred, raise it
             else:
-                raise Exception(
-                    f"Failed to execute {func.__name__} after {max_retries} retries.")
+                # usually this should not happen
+                raise Exception(f"Failed to execute {func.__name__} after {max_retries} retries without catching an exception.")
         return wrapper
     return decorator
+
 
 
 class RepoService:
