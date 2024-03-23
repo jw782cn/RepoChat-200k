@@ -99,6 +99,8 @@ streamlit run app.py
 ```
 4. **Use the application**: Follow the instructions in the application to download a GitHub repository, select files and folders, and chat with the LLM.
 
+If you encounter some issues with repo, you can always delete the repo dir in ./repos dir and download it again.
+
 ## Configuration
 
 The application's behavior can be customized through the following configuration options:
