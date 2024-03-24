@@ -362,7 +362,7 @@ class RepoService:
             result += '\n\n' + '=' * 10 + '\n\n'
             content = row['file_content']
             if row['language'] == 'Jupyter Notebook':
-                content = self.convert_ipynb_to_text(content)
+                content = convert_ipynb_to_text(content)
 
             if metadata_list:
                 metadata = [str(row[col]) for col in metadata_list]
