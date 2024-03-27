@@ -259,7 +259,7 @@ class RepoService:
 
         df = pd.DataFrame(data)
         csv_path = os.path.join(self.repo_path, "repo_stats.csv")
-        df.to_csv(csv_path, index=False)
+        df.to_csv(csv_path, index=False, escapechar='\\')
         logger.info(f"Saved repo stats to {csv_path}")
         return df
 
