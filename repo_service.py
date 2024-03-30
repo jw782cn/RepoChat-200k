@@ -441,6 +441,9 @@ class RepoManager:
     def __init__(self):
         logger.info("Initializing RepoManager...")
         self.repos = {}
+        # if no repo dir
+        if not os.path.exists(Config["repos_dir"]):
+            os.makedirs(Config["repos_dir"], exist_ok=True)
         self.load_repos()
         logger.info(f"Loaded {len(self.repos)} repositories.")
 
